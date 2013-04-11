@@ -6,7 +6,7 @@ import (
 )
 
 func TestIniSetGet(t *testing.T) {
-	ini := newIni()
+	ini := NewIni()
 	if ini.Get("", "foo") != "" {
 		t.Error("Unknown key should return an empty string")
 	}
@@ -23,7 +23,7 @@ func TestIniSetGet(t *testing.T) {
 
 func TestIniLoadMostBasicConfiguration(t *testing.T) {
 	config := bytes.NewBufferString("foo=bar")
-	ini := newIni()
+	ini := NewIni()
 	_, err := ini.ReadFrom(config)
 	if err != nil {
 		t.Error(err)
@@ -35,7 +35,7 @@ func TestIniLoadMostBasicConfiguration(t *testing.T) {
 
 func TestIniLoadKeyValueWithString(t *testing.T) {
 	config := bytes.NewBufferString(`foo="bar"`)
-	ini := newIni()
+	ini := NewIni()
 	_, err := ini.ReadFrom(config)
 	if err != nil {
 		t.Error(err)
@@ -47,7 +47,7 @@ func TestIniLoadKeyValueWithString(t *testing.T) {
 
 func TestIniLoadMultiLineKeyValue(t *testing.T) {
 	config := bytes.NewBufferString("foo=32\nbar=54")
-	ini := newIni()
+	ini := NewIni()
 	_, err := ini.ReadFrom(config)
 	if err != nil {
 		t.Error(err)
@@ -62,7 +62,7 @@ func TestIniLoadMultiLineKeyValue(t *testing.T) {
 
 func TestIniLoadMultiLineAndComment(t *testing.T) {
 	config := bytes.NewBufferString("foo=32.452\n; hihihihi\n# hohohoho\nbar=54")
-	ini := newIni()
+	ini := NewIni()
 	_, err := ini.ReadFrom(config)
 	if err != nil {
 		t.Error(err)
@@ -77,7 +77,7 @@ func TestIniLoadMultiLineAndComment(t *testing.T) {
 
 func TestIniLoadSections(t *testing.T) {
 	config := bytes.NewBufferString("foo=32.452\n; hihihihi\n[foobar]\nbar=54")
-	ini := newIni()
+	ini := NewIni()
 	_, err := ini.ReadFrom(config)
 	if err != nil {
 		t.Error(err)
@@ -117,7 +117,7 @@ func TestIniLoadGitConfig(t *testing.T) {
     token = 4d3cf26439283fake6fd7ef50c8c6e3c
 `)
 
-	ini := newIni()
+	ini := NewIni()
 	_, err := ini.ReadFrom(config)
 	if err != nil {
 		t.Error(err)
@@ -170,7 +170,7 @@ error_log = /usr/local/var/log/php-error.log
 [CLI Server]
 cli_server.color = On
 `)
-	ini := newIni()
+	ini := NewIni()
 	_, err := ini.ReadFrom(config)
 	if err != nil {
 		t.Error(err)
@@ -209,7 +209,7 @@ error_log = /usr/local/var/log/php-error.log
 [CLI Server]
 cli_server.color = On
 `)
-	ini := newIni()
+	ini := NewIni()
 	if _, err := ini.ReadFrom(config); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -218,7 +218,7 @@ cli_server.color = On
 		t.Errorf(err.Error())
 	}
 
-	ini2 := newIni()
+	ini2 := NewIni()
 	if _, err := ini2.ReadFrom(buffer); err != nil {
 		t.Errorf(err.Error())
 	}

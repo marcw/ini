@@ -20,13 +20,14 @@ const (
 	tokenCR             = '\r'
 )
 
+// Ini structure contains the data and a RWMutex for concurrency safety
 type Ini struct {
 	data map[string]map[string]string
 	rw   sync.RWMutex
 }
 
-// Instantiates a new Ini struct
-func newIni() *Ini {
+// Instantiates a new Ini structure
+func NewIni() *Ini {
 	return &Ini{data: make(map[string]map[string]string)}
 }
 
@@ -48,14 +49,22 @@ func (ini *Ini) Set(section, key, value string) {
 	ini.rw.Lock()
 	defer ini.rw.Unlock()
 
+	ini.set(section, key, value)
+}
+
+// Unsafe version of Set
+func (ini *Ini) set(section, key, value string) {
 	if _, ok := ini.data[section]; !ok {
 		ini.data[section] = make(map[string]string)
 	}
 	ini.data[section][key] = value
 }
 
-// ReadFrom() load the ini configuration contained in the Reader until EOF.
+// ReadFrom() read the ini configuration contained in the Reader r until EOF.
 func (ini *Ini) ReadFrom(r io.Reader) (int64, error) {
+	ini.rw.Lock()
+	defer ini.rw.Unlock()
+
 	s := new(scanner.Scanner).Init(r)
 	s.Mode = scanner.ScanStrings
 	s.Whitespace = 1 << '\t'
@@ -88,7 +97,7 @@ func (ini *Ini) ReadFrom(r io.Reader) (int64, error) {
 			if err != nil {
 				return -1, err
 			}
-			ini.Set(currentSection, key, value)
+			ini.set(currentSection, key, value)
 			break
 		}
 	}
@@ -96,9 +105,13 @@ func (ini *Ini) ReadFrom(r io.Reader) (int64, error) {
 	panic("unreachable")
 }
 
+// WriteTo() writes the configuration in an ini format to the Writer writer.
 func (ini *Ini) WriteTo(writer io.Writer) (int64, error) {
-	// Starting with the "" section
+	ini.rw.RLock()
+	defer ini.rw.RUnlock()
 	var nw int64
+
+	// Starting with the "" section
 
 	if data, ok := ini.data[""]; ok {
 		for k := range data {
