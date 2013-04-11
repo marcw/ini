@@ -54,40 +54,39 @@ func (ini *Ini) Set(section, key, value string) {
 	ini.data[section][key] = value
 }
 
-// Load() load the ini configuration contained in the Reader until EOF.
-func Load(r io.Reader) (*Ini, error) {
+// ReadFrom() load the ini configuration contained in the Reader until EOF.
+func (ini *Ini) ReadFrom(r io.Reader) (int64, error) {
 	s := new(scanner.Scanner).Init(r)
 	s.Mode = scanner.ScanStrings
 	s.Whitespace = 1 << '\t'
 
-	ini := newIni()
 	currentSection := ""
 	for {
 		token := s.Peek()
 		switch {
 		case token == scanner.EOF:
-			return ini, nil
+			return 0, nil
 		case token == tokenCommentClassic || token == tokenCommentHash:
-			readCommentLine(s)
+			ini.readCommentLine(s)
 			break
 		case token == '\n' || token == '\r':
 			s.Scan()
 			break
 		case token == tokenSectionStart:
 			var err error
-			currentSection, err = readSection(s)
+			currentSection, err = ini.readSection(s)
 			if err != nil {
-				return nil, err
+				return -1, err
 			}
 			break
 		default:
-			key, err := readKey(s)
+			key, err := ini.readKey(s)
 			if err != nil {
-				return nil, err
+				return -1, err
 			}
-			value, err := readValue(s)
+			value, err := ini.readValue(s)
 			if err != nil {
-				return nil, err
+				return -1, err
 			}
 			ini.Set(currentSection, key, value)
 			break
@@ -97,7 +96,45 @@ func Load(r io.Reader) (*Ini, error) {
 	panic("unreachable")
 }
 
-func readSection(s *scanner.Scanner) (string, error) {
+func (ini *Ini) WriteTo(writer io.Writer) (int64, error) {
+	// Starting with the "" section
+	var nw int64
+
+	if data, ok := ini.data[""]; ok {
+		for k := range data {
+			n, err := fmt.Fprintf(writer, "%s=%q\n", k, data[k])
+			nw = nw + int64(n)
+			if err != nil {
+				return nw, err
+			}
+		}
+	}
+
+	for section := range ini.data {
+		if section == "" {
+			continue
+		}
+		index := 0
+		for k := range ini.data[section] {
+			if index == 0 {
+				n, err := fmt.Fprintf(writer, "[%s]\n", section)
+				nw = nw + int64(n)
+				if err != nil {
+					return nw, err
+				}
+			}
+			n, err := fmt.Fprintf(writer, "%s=%q\n", k, ini.data[section][k])
+			nw = nw + int64(n)
+			if err != nil {
+				return nw, err
+			}
+			index++
+		}
+	}
+	return nw, nil
+}
+
+func (ini *Ini) readSection(s *scanner.Scanner) (string, error) {
 	buffer := new(bytes.Buffer)
 	for {
 		pos := s.Pos()
@@ -117,7 +154,7 @@ func readSection(s *scanner.Scanner) (string, error) {
 	return buffer.String(), nil
 }
 
-func readValue(s *scanner.Scanner) (string, error) {
+func (ini *Ini) readValue(s *scanner.Scanner) (string, error) {
 	buffer := new(bytes.Buffer)
 	for {
 		token := s.Scan()
@@ -144,7 +181,7 @@ func readValue(s *scanner.Scanner) (string, error) {
 	return buffer.String(), nil
 }
 
-func readKey(s *scanner.Scanner) (string, error) {
+func (ini *Ini) readKey(s *scanner.Scanner) (string, error) {
 	buffer := new(bytes.Buffer)
 	for {
 		pos := s.Pos()
@@ -166,7 +203,7 @@ func readKey(s *scanner.Scanner) (string, error) {
 	return buffer.String(), nil
 }
 
-func readCommentLine(s *scanner.Scanner) {
+func (ini *Ini) readCommentLine(s *scanner.Scanner) {
 	for {
 		token := s.Scan()
 		if token == '\n' {

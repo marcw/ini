@@ -23,7 +23,8 @@ func TestIniSetGet(t *testing.T) {
 
 func TestIniLoadMostBasicConfiguration(t *testing.T) {
 	config := bytes.NewBufferString("foo=bar")
-	ini, err := Load(config)
+	ini := newIni()
+	_, err := ini.ReadFrom(config)
 	if err != nil {
 		t.Error(err)
 	}
@@ -34,7 +35,8 @@ func TestIniLoadMostBasicConfiguration(t *testing.T) {
 
 func TestIniLoadKeyValueWithString(t *testing.T) {
 	config := bytes.NewBufferString(`foo="bar"`)
-	ini, err := Load(config)
+	ini := newIni()
+	_, err := ini.ReadFrom(config)
 	if err != nil {
 		t.Error(err)
 	}
@@ -45,7 +47,8 @@ func TestIniLoadKeyValueWithString(t *testing.T) {
 
 func TestIniLoadMultiLineKeyValue(t *testing.T) {
 	config := bytes.NewBufferString("foo=32\nbar=54")
-	ini, err := Load(config)
+	ini := newIni()
+	_, err := ini.ReadFrom(config)
 	if err != nil {
 		t.Error(err)
 	}
@@ -59,7 +62,8 @@ func TestIniLoadMultiLineKeyValue(t *testing.T) {
 
 func TestIniLoadMultiLineAndComment(t *testing.T) {
 	config := bytes.NewBufferString("foo=32.452\n; hihihihi\n# hohohoho\nbar=54")
-	ini, err := Load(config)
+	ini := newIni()
+	_, err := ini.ReadFrom(config)
 	if err != nil {
 		t.Error(err)
 	}
@@ -73,7 +77,8 @@ func TestIniLoadMultiLineAndComment(t *testing.T) {
 
 func TestIniLoadSections(t *testing.T) {
 	config := bytes.NewBufferString("foo=32.452\n; hihihihi\n[foobar]\nbar=54")
-	ini, err := Load(config)
+	ini := newIni()
+	_, err := ini.ReadFrom(config)
 	if err != nil {
 		t.Error(err)
 	}
@@ -112,7 +117,8 @@ func TestIniLoadGitConfig(t *testing.T) {
     token = 4d3cf26439283fake6fd7ef50c8c6e3c
 `)
 
-	ini, err := Load(config)
+	ini := newIni()
+	_, err := ini.ReadFrom(config)
 	if err != nil {
 		t.Error(err)
 	}
@@ -164,7 +170,8 @@ error_log = /usr/local/var/log/php-error.log
 [CLI Server]
 cli_server.color = On
 `)
-	ini, err := Load(config)
+	ini := newIni()
+	_, err := ini.ReadFrom(config)
 	if err != nil {
 		t.Error(err)
 	}
@@ -182,5 +189,46 @@ cli_server.color = On
 	}
 	if v := ini.Get("CLI Server", "cli_server.color"); v != "On" {
 		t.Errorf("Got %#v", v)
+	}
+}
+
+func TestWriteTo(t *testing.T) {
+	config := bytes.NewBufferString(
+		`
+foobar="absolute foobaritude"
+[PHP]
+
+;;;;;;;;;;;;;;;;;;;
+; About php.ini   ;
+;;;;;;;;;;;;;;;;;;;
+
+engine = On
+short_open_tag = Off
+unserialize_callback_func =
+error_log = /usr/local/var/log/php-error.log
+[CLI Server]
+cli_server.color = On
+`)
+	ini := newIni()
+	if _, err := ini.ReadFrom(config); err != nil {
+		t.Errorf(err.Error())
+	}
+	buffer := new(bytes.Buffer)
+	if _, err := ini.WriteTo(buffer); err != nil {
+		t.Errorf(err.Error())
+	}
+
+	ini2 := newIni()
+	if _, err := ini2.ReadFrom(buffer); err != nil {
+		t.Errorf(err.Error())
+	}
+	if ini2.Get("", "foobar") != "absolute foobaritude" {
+		t.Errorf(ini2.Get("", "foobar"))
+	}
+	if ini2.Get("PHP", "engine") != "On" {
+		t.Errorf(ini2.Get("PHP", "engine"))
+	}
+	if ini2.Get("CLI Server", "cli_server.color") != "On" {
+		t.Errorf(ini2.Get("CLI Server", "cli_server.color"))
 	}
 }
