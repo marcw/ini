@@ -21,6 +21,23 @@ func TestIniSetGet(t *testing.T) {
 	}
 }
 
+func TestIniHas(t *testing.T) {
+	ini := NewIni()
+	if ini.Has("foo", "bar") {
+		t.Error("should return false on non-existing section")
+	}
+
+	ini.Set("foo", "foo", "foobar")
+	if ini.Has("foo", "bar") {
+		t.Error("should return false on non-existing value in existing section")
+	}
+
+	ini.Set("foo", "bar", "foobar")
+	if !ini.Has("foo", "bar") {
+		t.Error("should return true on existing value in existing section")
+	}
+}
+
 func TestIniLoadMostBasicConfiguration(t *testing.T) {
 	config := bytes.NewBufferString("foo=bar")
 	ini := NewIni()

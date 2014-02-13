@@ -52,6 +52,19 @@ func (ini *Ini) Set(section, key, value string) {
 	ini.set(section, key, value)
 }
 
+func (ini *Ini) Has(section, key string) bool {
+	ini.rw.RLock()
+	defer ini.rw.RUnlock()
+
+	if _, ok := ini.data[section]; !ok {
+		return false
+	}
+	if _, ok := ini.data[section][key]; !ok {
+		return false
+	}
+	return true
+}
+
 // Unsafe version of Set
 func (ini *Ini) set(section, key, value string) {
 	if _, ok := ini.data[section]; !ok {
