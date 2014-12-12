@@ -2,6 +2,7 @@ package ini
 
 import (
 	"bytes"
+	"os"
 	"testing"
 )
 
@@ -113,6 +114,7 @@ func TestIniLoadGitConfig(t *testing.T) {
 [user]
   name  = Marc Weistroff
   email = marc@example.org
+  foo-bar=blart
   #email = marc@example.net
 [core]
   excludesfile="~/.gitignore"
@@ -138,6 +140,9 @@ func TestIniLoadGitConfig(t *testing.T) {
 	_, err := ini.ReadFrom(config)
 	if err != nil {
 		t.Error(err)
+	}
+	if v := ini.Get("user", "foo-bar"); v != "blart" {
+		t.Errorf("Got %#v", v)
 	}
 	if v := ini.Get("user", "name"); v != "Marc Weistroff" {
 		t.Errorf("Got %#v", v)
@@ -247,5 +252,26 @@ cli_server.color = On
 	}
 	if ini2.Get("CLI Server", "cli_server.color") != "On" {
 		t.Errorf(ini2.Get("CLI Server", "cli_server.color"))
+	}
+}
+
+func TestLoadIniWithEnvVar(t *testing.T) {
+	config := bytes.NewBufferString(
+		`
+[PHP]
+
+;;;;;;;;;;;;;;;;;;;
+; About php.ini   ;
+;;;;;;;;;;;;;;;;;;;
+
+error_log = ${INITEST_USR_LOCAL}${INITEST_LOGDIR}/php-error.log
+`)
+
+	os.Setenv("INITEST_USR_LOCAL", "/usr/local")
+	os.Setenv("INITEST_LOGDIR", "/log")
+	ini := NewIni()
+	ini.ReadFrom(config)
+	if ini.Get("PHP", "error_log") != "/usr/local/log/php-error.log" {
+		t.Errorf(ini.Get("PHP", "error_log"))
 	}
 }

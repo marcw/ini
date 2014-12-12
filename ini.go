@@ -5,6 +5,8 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
+	"regexp"
 	"strings"
 	"sync"
 	"text/scanner"
@@ -18,6 +20,10 @@ const (
 	tokenSpace          = ' '
 	tokenLF             = '\n'
 	tokenCR             = '\r'
+)
+
+var (
+	envvarRegexp = regexp.MustCompile(`\${[a-zA-Z_]+[a-zA-Z0-9_]*}`)
 )
 
 // Ini structure contains the data and a RWMutex for concurrency safety
@@ -110,6 +116,13 @@ func (ini *Ini) ReadFrom(r io.Reader) (int64, error) {
 			value, err := ini.readValue(s)
 			if err != nil {
 				return -1, err
+			}
+			if strings.Index(value, "${") != -1 {
+				fmt.Println("got it")
+				for _, match := range envvarRegexp.FindAllString(value, -1) {
+
+					value = strings.Replace(value, match, os.Getenv(match[2:len(match)-1]), -1)
+				}
 			}
 			ini.set(currentSection, key, value)
 			break
