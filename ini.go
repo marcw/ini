@@ -58,6 +58,14 @@ func (ini *Ini) Set(section, key, value string) {
 	ini.set(section, key, value)
 }
 
+func (ini *Ini) HasSection(section string) bool {
+	ini.rw.RLock()
+	defer ini.rw.RUnlock()
+
+	_, ok := ini.data[section]
+	return ok
+}
+
 // Has() returns true if the ini structure has corresponding value in section/key
 func (ini *Ini) Has(section, key string) bool {
 	ini.rw.RLock()
